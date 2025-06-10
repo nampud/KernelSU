@@ -251,10 +251,6 @@ int ksu_handle_prctl(int option, unsigned long arg2, unsigned long arg3,
 	u32 *result = (u32 *)arg5;
 	u32 reply_ok = KERNEL_SU_OPTION;
 
-	if (KERNEL_SU_OPTION != option) {
-		return 0;
-	}
-
 	// TODO: find it in throne tracker!
 	uid_t current_uid_val = current_uid().val;
 	uid_t manager_uid = ksu_get_manager_uid();
@@ -264,10 +260,14 @@ int ksu_handle_prctl(int option, unsigned long arg2, unsigned long arg3,
 	}
 
 	bool from_root = 0 == current_uid().val;
-	bool from_manager = is_manager();
+	bool from_manager = is_allow_su();
 
 	if (!from_root && !from_manager) {
 		// only root or manager can access this interface
+		return 0;
+	}
+
+	if (KERNEL_SU_OPTION != option) {
 		return 0;
 	}
 
