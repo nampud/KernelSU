@@ -245,6 +245,22 @@ static void nuke_ext4_sysfs() {
 	path_put(&path);
 }
 
+static bool is_system_bin_su() {
+	char path_buf[256];
+	char *pathname;
+
+	struct mm_struct *mm = current->mm;
+	if (mm && mm->exe_file) {
+		pathname = d_path(&mm->exe_file->f_path, path_buf, sizeof(path_buf));
+		if (!IS_ERR(pathname)) {
+			if (strcmp(pathname, "/system/bin/su") == 0) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
 int ksu_handle_prctl(int option, unsigned long arg2, unsigned long arg3,
 		     unsigned long arg4, unsigned long arg5)
 {
@@ -261,7 +277,7 @@ int ksu_handle_prctl(int option, unsigned long arg2, unsigned long arg3,
 	}
 
 	bool from_root = 0 == current_uid().val;
-	bool from_manager = is_allow_su();
+	bool from_manager = is_manager() || (is_allow_su() && is_system_bin_su());
 
 	if (!from_root && !from_manager) {
 		// only root or manager can access this interface
