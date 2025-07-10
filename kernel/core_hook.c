@@ -245,19 +245,14 @@ static void nuke_ext4_sysfs() {
 	path_put(&path);
 }
 
-static bool is_system_bin_su() {
-	char path_buf[256];
-	char *pathname;
+static bool is_system_bin_su()
+{
+	// YES in_execve becomes 0 when it succeeds.
+	if (!current->mm || current->in_execve) 
+		return false;
 
-	struct mm_struct *mm = current->mm;
-	if (mm && mm->exe_file) {
-		pathname = d_path(&mm->exe_file->f_path, path_buf, sizeof(path_buf));
-		if (!IS_ERR(pathname)) {
-			if (strcmp(pathname, "/system/bin/su") == 0) return true;
-			if (strcmp(pathname, "/product/bin/su") == 0) return true;
-		}
-	}
-	return false;
+	// quick af check
+	return (current->mm->exe_file && !strcmp(current->mm->exe_file->f_path.dentry->d_name.name, "su"));
 }
 
 int ksu_handle_prctl(int option, unsigned long arg2, unsigned long arg3,
